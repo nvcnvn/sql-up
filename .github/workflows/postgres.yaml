@@ -104,7 +104,7 @@ jobs:
               WHERE table_name = 'users' 
                 AND column_name = 'active'
                 AND data_type = 'boolean'
-                AND column_default = 'false';
+                AND column_default = 'true';
               IF col_count = 0 THEN
                   RAISE EXCEPTION 'active column not found or incorrect';
               END IF;
