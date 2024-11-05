@@ -43,7 +43,7 @@ func main() {
 		},
 	}
 
-	err := app.Run([]string{"sql-up"})
+	err := app.Run(os.Args)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
