@@ -11,6 +11,7 @@ sql-up --dbms postgres --connection-string <connection-string> --sql-file <sql-f
 **sql-up** will apply the migration after lasted-non applied magic marker `-- sql-up` in the SQL file.
 
 ```sql
+-- sql-up
 -- Create table
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,

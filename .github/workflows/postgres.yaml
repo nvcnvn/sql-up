@@ -36,6 +36,7 @@ jobs:
       - name: Create test migration
         run: |
           cat > test.sql << EOF
+          -- sql-up
           CREATE TABLE users (
             id SERIAL PRIMARY KEY,
             name TEXT NOT NULL
