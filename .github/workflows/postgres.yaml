@@ -48,7 +48,7 @@ jobs:
 
       - name: Test PostgreSQL Migration
         run: |
-          go run [cmd/main.go](cmd/main.go) \
+          go run ./cmd/ \
             --dbms postgres \
             --connection-string "postgres://postgres:postgres@localhost:5432/testdb?sslmode=disable" \
             --sql-file test.sql
