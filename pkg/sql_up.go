@@ -115,9 +115,14 @@ func applyMigrations(ctx context.Context, db *sql.DB, newSQLContent string) erro
 	fmt.Println("newSQLContent", newSQLContent)
 	fmt.Println("diff", diff)
 
+	_, err = tx.ExecContext(ctx, diff)
+	if err != nil {
+		return fmt.Errorf("failed to apply new update: %w", err)
+	}
+
 	_, err = tx.ExecContext(ctx, stmt, newSQLContent)
 	if err != nil {
-		return fmt.Errorf("failed to update sql_up: %w", err)
+		return fmt.Errorf("failed to update sql_up state table: %w", err)
 	}
 
 	err = tx.Commit()
