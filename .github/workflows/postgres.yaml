@@ -114,3 +114,55 @@ jobs:
           -- Verify successful completion
           SELECT 'Table verification completed successfully' as result;
           EOF
+
+      - name: Now, drop name, add age
+        run: |
+          cat > test.sql << EOF
+          -- sql-up
+          ALTER TABLE users DROP COLUMN name;
+          ALTER TABLE users ADD COLUMN age INTEGER;
+          EOF
+
+      - name: Test PostgreSQL Migration
+        run: |
+          go run ./cmd/ \
+            --dbms postgres \
+            --connection-string "postgres://postgres:postgres@localhost:5432/testdb?sslmode=disable" \
+            --sql-file test.sql
+
+      - name: Verify Migration
+        run: |
+          set -e
+          # List all tables
+          PGPASSWORD=postgres psql -h localhost -U postgres -d testdb -c "\dt"
+          # Show detailed table structure
+          PGPASSWORD=postgres psql -h localhost -U postgres -d testdb -c "\d users"
+          # Verify table structure
+          PGPASSWORD=postgres psql -v ON_ERROR_STOP=1 -h localhost -U postgres -d testdb << 'EOF' || exit 1
+          DO $$
+          DECLARE
+              col_count integer;
+          BEGIN
+              -- Check for name column absence
+              SELECT COUNT(*) INTO col_count
+              FROM information_schema.columns 
+              WHERE table_name = 'users' 
+                AND column_name = 'name';
+              IF col_count > 0 THEN
+                  RAISE EXCEPTION 'name column found';
+              END IF;
+              -- Check for age column
+              SELECT COUNT(*) INTO col_count
+              FROM information_schema.columns 
+              WHERE table_name = 'users' 
+                AND column_name = 'age'
+                AND data_type = 'integer'
+                AND is_nullable = 'YES';
+              IF col_count = 0 THEN
+                  RAISE EXCEPTION 'age column not found or incorrect';
+              END IF;
+          END;
+          $$;
+          -- Verify successful completion
+          SELECT 'Table verification completed successfully' as result;
+          EOF
