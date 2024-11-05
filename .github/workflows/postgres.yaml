@@ -57,10 +57,8 @@ jobs:
         run: |
           # List all tables
           PGPASSWORD=postgres psql -h localhost -U postgres -d testdb -c "\dt"
-          
           # Show detailed table structure
           PGPASSWORD=postgres psql -h localhost -U postgres -d testdb -c "\d users"
-          
           # Verify table structure
           PGPASSWORD=postgres psql -h localhost -U postgres -d testdb << 'EOF' || exit 1
           DO $$
@@ -111,7 +109,6 @@ jobs:
               END IF;
           END;
           $$;
-          
           -- Verify successful completion
           SELECT 'Table verification completed successfully' as result;
-        EOF
+          EOF
