@@ -111,6 +111,10 @@ func applyMigrations(ctx context.Context, db *sql.DB, newSQLContent string) erro
 		return fmt.Errorf("new sql content does not start with '-- sql-up'")
 	}
 
+	fmt.Println("currentSQLContent", currentSQLContent)
+	fmt.Println("newSQLContent", newSQLContent)
+	fmt.Println("diff", diff)
+
 	_, err = tx.ExecContext(ctx, stmt, newSQLContent)
 	if err != nil {
 		return fmt.Errorf("failed to update sql_up: %w", err)
