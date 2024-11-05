@@ -1,0 +1,117 @@
+name: Test PostgreSQL Migration
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-postgres:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready 
+          --health-interval 10s 
+          --health-timeout 5s 
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.23"
+
+      - name: Create test migration
+        run: |
+          cat > test.sql << EOF
+          CREATE TABLE users (
+            id SERIAL PRIMARY KEY,
+            name TEXT NOT NULL
+          );
+          -- sql-up
+          ALTER TABLE users ADD COLUMN email TEXT;
+          -- sql-up
+          ALTER TABLE users ADD COLUMN active BOOLEAN DEFAULT false;
+          EOF
+
+      - name: Test PostgreSQL Migration
+        run: |
+          go run [cmd/main.go](cmd/main.go) \
+            --dbms postgres \
+            --connection-string "postgres://postgres:postgres@localhost:5432/testdb?sslmode=disable" \
+            --sql-file test.sql
+
+      - name: Verify Migration
+        run: |
+          # List all tables
+          PGPASSWORD=postgres psql -h localhost -U postgres -d testdb -c "\dt"
+          
+          # Show detailed table structure
+          PGPASSWORD=postgres psql -h localhost -U postgres -d testdb -c "\d users"
+          
+          # Verify table structure
+          PGPASSWORD=postgres psql -h localhost -U postgres -d testdb << 'EOF' || exit 1
+          DO $$
+          DECLARE
+              col_count integer;
+          BEGIN
+              -- Check for id column with correct type
+              SELECT COUNT(*) INTO col_count
+              FROM information_schema.columns 
+              WHERE table_name = 'users' 
+                AND column_name = 'id'
+                AND data_type = 'integer'
+                AND is_nullable = 'NO';
+              IF col_count = 0 THEN
+                  RAISE EXCEPTION 'id column not found or incorrect';
+              END IF;
+
+              -- Check for name column
+              SELECT COUNT(*) INTO col_count
+              FROM information_schema.columns 
+              WHERE table_name = 'users' 
+                AND column_name = 'name'
+                AND data_type = 'text'
+                AND is_nullable = 'NO';
+              IF col_count = 0 THEN
+                  RAISE EXCEPTION 'name column not found or incorrect';
+              END IF;
+
+              -- Check for email column
+              SELECT COUNT(*) INTO col_count
+              FROM information_schema.columns 
+              WHERE table_name = 'users' 
+                AND column_name = 'email'
+                AND data_type = 'text';
+              IF col_count = 0 THEN
+                  RAISE EXCEPTION 'email column not found or incorrect';
+              END IF;
+
+              -- Check for active column with default
+              SELECT COUNT(*) INTO col_count
+              FROM information_schema.columns 
+              WHERE table_name = 'users' 
+                AND column_name = 'active'
+                AND data_type = 'boolean'
+                AND column_default = 'false';
+              IF col_count = 0 THEN
+                  RAISE EXCEPTION 'active column not found or incorrect';
+              END IF;
+          END;
+          $$;
+          
+          -- Verify successful completion
+          SELECT 'Table verification completed successfully' as result;
+        EOF
