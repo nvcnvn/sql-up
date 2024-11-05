@@ -56,12 +56,13 @@ jobs:
 
       - name: Verify Migration
         run: |
+          set -e
           # List all tables
           PGPASSWORD=postgres psql -h localhost -U postgres -d testdb -c "\dt"
           # Show detailed table structure
           PGPASSWORD=postgres psql -h localhost -U postgres -d testdb -c "\d users"
           # Verify table structure
-          PGPASSWORD=postgres psql -h localhost -U postgres -d testdb << 'EOF' || exit 1
+          PGPASSWORD=postgres psql -v ON_ERROR_STOP=1 -h localhost -U postgres -d testdb << 'EOF' || exit 1
           DO $$
           DECLARE
               col_count integer;
