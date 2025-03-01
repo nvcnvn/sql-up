@@ -33,7 +33,7 @@ func Up(ctx context.Context, config *Config) error {
 
 	file, err := os.ReadFile(config.SQLFile)
 	if err != nil {
-		return fmt.Errorf("failed to read SQLFile, path %s: %w", config.ConnectionString, err)
+		return fmt.Errorf("failed to read SQLFile, path %s: %w", config.SQLFile, err)
 	}
 	newSQLContent := string(file)
 
